@@ -5,6 +5,8 @@ import readline from "readline";
 const API_URL =
   "https://assessment.ksensetech.com/api/patients?page=1&limit=10";
 
+const SUBMIT_URL = "https://assessment.ksensetech.com/api/submit-assessment";
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -76,7 +78,7 @@ async function run(apiKey) {
   });
 
   if (!res.ok) {
-    throw new Error(`API error: ${res.status}`);
+    throw new Error(`Patient API error: ${res.status}`);
   }
 
   const json = await res.json();
@@ -88,7 +90,6 @@ async function run(apiKey) {
 
   for (const p of patients) {
     let totalRisk = 0;
-    let hasInvalidData = false;
 
     const bp = bpScore(p.blood_pressure);
     const temp = tempScore(p.temperature);
@@ -97,7 +98,6 @@ async function run(apiKey) {
     totalRisk += bp.score + temp.score + age.score;
 
     if (bp.invalid || temp.invalid || age.invalid) {
-      hasInvalidData = true;
       data_quality_issues.push(p.patient_id);
     }
 
@@ -110,13 +110,29 @@ async function run(apiKey) {
     }
   }
 
-  const output = {
+  const payload = {
     high_risk_patients,
     fever_patients,
     data_quality_issues,
   };
 
-  console.log(JSON.stringify(output, null, 2));
+  const submitRes = await fetch(SUBMIT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!submitRes.ok) {
+    const errText = await submitRes.text();
+    throw new Error(`Submission failed (${submitRes.status}): ${errText}`);
+  }
+
+  const submitJson = await submitRes.json();
+  console.log("Submission successful!");
+  console.log(submitJson);
 }
 
 // ---- CLI prompt ----
