@@ -162,6 +162,11 @@ async function run(apiKey) {
       totalExpected = pagination.total;
     }
 
+    if (!data || data.length === 0) {
+      hasNext = false;
+      continue;
+    }
+
     console.log(`Processing page ${page}, patients: ${data.length}`);
 
     for (const p of data) {
