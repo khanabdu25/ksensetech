@@ -140,7 +140,10 @@ async function run(apiKey) {
   const fever_patients = [];
   const data_quality_issues = [];
 
-  while (hasNext) {
+  while (
+    hasNext &&
+    (processedCount < totalExpected || totalExpected === null)
+  ) {
     const url = `https://assessment.ksensetech.com/api/patients?page=${page}&limit=${limit}`;
 
     const res = await fetchWithRetry(url, {
