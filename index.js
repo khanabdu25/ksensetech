@@ -74,53 +74,70 @@ function ageScore(age) {
 // ---- Main processing ----
 
 async function run(apiKey) {
-  const res = await fetch(API_URL, {
-    headers: {
-      "x-api-key": apiKey,
-    },
-  });
+  let page = 1;
+  const limit = 10;
 
-  if (!res.ok) {
-    throw new Error(`Patient API error: ${res.status}`);
-  }
-
-  const json = await res.json();
-
-  console.log("received from api", JSON.stringify(json, null, 2));
-  const patients = json.data;
+  let processedCount = 0;
+  let totalExpected = null;
+  let hasNext = true;
 
   const high_risk_patients = [];
   const fever_patients = [];
   const data_quality_issues = [];
 
-  for (const p of patients) {
-    console.log("--------------------------------");
-    console.log("processing patient", p.patient_id);
-    let totalRisk = 0;
+  while (hasNext) {
+    const url = `https://assessment.ksensetech.com/api/patients?page=${page}&limit=${limit}`;
 
-    console.log("blood pressure", p.blood_pressure);
-    const bp = bpScore(p.blood_pressure);
-    console.log("got bp score", bp);
-    console.log("temperature", p.temperature);
-    const temp = tempScore(p.temperature);
-    console.log("got temp score", temp);
-    console.log("age", p.age);
-    const age = ageScore(p.age);
-    console.log("got age score", age);
+    const res = await fetch(url, {
+      headers: { "x-api-key": apiKey },
+    });
 
-    totalRisk += bp.score + temp.score + age.score;
-
-    if (bp.invalid || temp.invalid || age.invalid) {
-      data_quality_issues.push(p.patient_id);
+    if (!res.ok) {
+      throw new Error(`Patient API error (page ${page}): ${res.status}`);
     }
 
-    if (p.temperature >= 99.6) {
-      fever_patients.push(p.patient_id);
+    const json = await res.json();
+
+    const { data, pagination } = json;
+
+    if (totalExpected === null) {
+      totalExpected = pagination.total;
     }
 
-    if (totalRisk >= 4) {
-      high_risk_patients.push(p.patient_id);
+    console.log(`Processing page ${page}, patients: ${data.length}`);
+
+    for (const p of data) {
+      let totalRisk = 0;
+
+      const bp = bpScore(p.blood_pressure);
+      const temp = tempScore(p.temperature);
+      const age = ageScore(p.age);
+
+      totalRisk += bp.score + temp.score + age.score;
+
+      if (bp.invalid || temp.invalid || age.invalid) {
+        data_quality_issues.push(p.patient_id);
+      }
+
+      if (typeof p.temperature === "number" && p.temperature >= 99.6) {
+        fever_patients.push(p.patient_id);
+      }
+
+      if (totalRisk >= 4) {
+        high_risk_patients.push(p.patient_id);
+      }
+
+      processedCount++;
     }
+
+    hasNext = pagination.hasNext;
+    page++;
+  }
+
+  if (processedCount !== totalExpected) {
+    console.warn(
+      `Warning: processed ${processedCount}, expected ${totalExpected}`
+    );
   }
 
   const payload = {
