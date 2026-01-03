@@ -64,8 +64,8 @@ function ageScore(age) {
     return { score: 0, invalid: true };
   }
 
-  if (age < 40) return { score: 1 };
-  if (age <= 65) return { score: 1 };
+  if (age < 40) return { score: 0 };
+  if (age >= 40 && age <= 65) return { score: 1 };
   if (age > 65) return { score: 2 };
 
   return { score: 0 };
