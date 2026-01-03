@@ -221,23 +221,23 @@ async function run(apiKey) {
 
   console.log("payload", JSON.stringify(payload, null, 2));
 
-  //   const submitRes = await fetchWithRetry(SUBMIT_URL, {
-  //     method: "POST",
-  //     headers: {
-  //       "Content-Type": "application/json",
-  //       "x-api-key": apiKey,
-  //     },
-  //     body: JSON.stringify(payload),
-  //   });
+  const submitRes = await fetchWithRetry(SUBMIT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": apiKey,
+    },
+    body: JSON.stringify(payload),
+  });
 
-  //   if (!submitRes.ok) {
-  //     const errText = await submitRes.text();
-  //     throw new Error(`Submission failed (${submitRes.status}): ${errText}`);
-  //   }
+  if (!submitRes.ok) {
+    const errText = await submitRes.text();
+    throw new Error(`Submission failed (${submitRes.status}): ${errText}`);
+  }
 
-  //   const submitJson = await submitRes.json();
-  //   console.log("Submission successful!");
-  //   console.log(submitJson);
+  const submitJson = await submitRes.json();
+  console.log("Submission successful!");
+  console.log(submitJson);
 }
 
 // ---- CLI prompt ----
