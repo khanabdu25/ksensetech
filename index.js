@@ -12,6 +12,61 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
+async function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function fetchWithRetry(url, options, retries = 5, attempt = 1) {
+  try {
+    const res = await fetch(url, options);
+
+    // Success
+    if (res.ok) {
+      return res;
+    }
+
+    // Retryable status codes
+    if ([429, 500, 502, 503].includes(res.status)) {
+      if (attempt > retries) {
+        throw new Error(
+          `Failed after ${retries} retries (status ${res.status})`
+        );
+      }
+
+      // Retry-After header (seconds)
+      const retryAfter = res.headers.get("retry-after");
+      const baseDelay = retryAfter
+        ? Number(retryAfter) * 1000
+        : Math.min(1000 * 2 ** (attempt - 1), 10000);
+
+      // Add jitter
+      const jitter = Math.random() * 300;
+
+      const delay = baseDelay + jitter;
+
+      console.warn(
+        `Retrying ${url} (status ${
+          res.status
+        }) attempt ${attempt}/${retries} in ${Math.round(delay)}ms`
+      );
+
+      await sleep(delay);
+      return fetchWithRetry(url, options, retries, attempt + 1);
+    }
+
+    // Non-retryable error
+    throw new Error(`Non-retryable error: ${res.status}`);
+  } catch (err) {
+    // Network error (also retryable)
+    if (attempt <= retries) {
+      const delay = Math.min(1000 * 2 ** (attempt - 1), 10000);
+      await sleep(delay);
+      return fetchWithRetry(url, options, retries, attempt + 1);
+    }
+    throw err;
+  }
+}
+
 // ---- Utility helpers ----
 
 function isInvalid(value) {
@@ -88,7 +143,7 @@ async function run(apiKey) {
   while (hasNext) {
     const url = `https://assessment.ksensetech.com/api/patients?page=${page}&limit=${limit}`;
 
-    const res = await fetch(url, {
+    const res = await fetchWithRetry(url, {
       headers: { "x-api-key": apiKey },
     });
 
@@ -146,7 +201,7 @@ async function run(apiKey) {
     data_quality_issues,
   };
 
-  //   const submitRes = await fetch(SUBMIT_URL, {
+  //   const submitRes = await fetchWithRetry(SUBMIT_URL, {
   //     method: "POST",
   //     headers: {
   //       "Content-Type": "application/json",
