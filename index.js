@@ -101,8 +101,12 @@ async function run(apiKey) {
     console.log("blood pressure", p.blood_pressure);
     const bp = bpScore(p.blood_pressure);
     console.log("got bp score", bp);
+    console.log("temperature", p.temperature);
     const temp = tempScore(p.temperature);
+    console.log("got temp score", temp);
+    console.log("age", p.age);
     const age = ageScore(p.age);
+    console.log("got age score", age);
 
     totalRisk += bp.score + temp.score + age.score;
 
@@ -143,7 +147,7 @@ async function run(apiKey) {
   //   console.log("Submission successful!");
   //   console.log(submitJson);
 
-  console.log(JSON.stringify(payload, null, 2));
+  console.log("payload", JSON.stringify(payload, null, 2));
 }
 
 // ---- CLI prompt ----
