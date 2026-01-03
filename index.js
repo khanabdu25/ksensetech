@@ -201,6 +201,18 @@ async function run(apiKey) {
     data_quality_issues,
   };
 
+  // if any lists are empty, return early
+  if (
+    high_risk_patients.length === 0 &&
+    fever_patients.length === 0 &&
+    data_quality_issues.length === 0
+  ) {
+    console.log("No patients to submit");
+    return;
+  }
+
+  console.log("payload", JSON.stringify(payload, null, 2));
+
   //   const submitRes = await fetchWithRetry(SUBMIT_URL, {
   //     method: "POST",
   //     headers: {
@@ -218,8 +230,6 @@ async function run(apiKey) {
   //   const submitJson = await submitRes.json();
   //   console.log("Submission successful!");
   //   console.log(submitJson);
-
-  console.log("payload", JSON.stringify(payload, null, 2));
 }
 
 // ---- CLI prompt ----
