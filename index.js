@@ -130,7 +130,7 @@ function ageScore(age) {
 
 async function run(apiKey) {
   let page = 1;
-  const limit = 10;
+  const limit = 5;
 
   let processedCount = 0;
   let totalExpected = null;
