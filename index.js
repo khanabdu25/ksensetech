@@ -35,11 +35,14 @@ function bpScore(bp) {
 
   const { sys, dia } = parsed;
 
-  if (sys < 120 && dia < 80) return { score: 1 };
-  if (sys >= 120 && sys <= 129 && dia < 80) return { score: 2 };
+  console.log("sys", sys);
+  console.log("dia", dia);
+
+  if (sys < 120 && dia < 80) return { score: 0 };
+  if (sys >= 120 && sys <= 129 && dia < 80) return { score: 1 };
   if ((sys >= 130 && sys <= 139) || (dia >= 80 && dia <= 89))
-    return { score: 3 };
-  if (sys >= 140 || dia >= 90) return { score: 4 };
+    return { score: 2 };
+  if (sys >= 140 || dia >= 90) return { score: 3 };
 
   return { score: 0 };
 }
@@ -82,6 +85,8 @@ async function run(apiKey) {
   }
 
   const json = await res.json();
+
+  console.log("received from api", JSON.stringify(json, null, 2));
   const patients = json.data;
 
   const high_risk_patients = [];
@@ -89,9 +94,13 @@ async function run(apiKey) {
   const data_quality_issues = [];
 
   for (const p of patients) {
+    console.log("--------------------------------");
+    console.log("processing patient", p.patient_id);
     let totalRisk = 0;
 
+    console.log("blood pressure", p.blood_pressure);
     const bp = bpScore(p.blood_pressure);
+    console.log("got bp score", bp);
     const temp = tempScore(p.temperature);
     const age = ageScore(p.age);
 
@@ -116,23 +125,25 @@ async function run(apiKey) {
     data_quality_issues,
   };
 
-  const submitRes = await fetch(SUBMIT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": apiKey,
-    },
-    body: JSON.stringify(payload),
-  });
+  //   const submitRes = await fetch(SUBMIT_URL, {
+  //     method: "POST",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       "x-api-key": apiKey,
+  //     },
+  //     body: JSON.stringify(payload),
+  //   });
 
-  if (!submitRes.ok) {
-    const errText = await submitRes.text();
-    throw new Error(`Submission failed (${submitRes.status}): ${errText}`);
-  }
+  //   if (!submitRes.ok) {
+  //     const errText = await submitRes.text();
+  //     throw new Error(`Submission failed (${submitRes.status}): ${errText}`);
+  //   }
 
-  const submitJson = await submitRes.json();
-  console.log("Submission successful!");
-  console.log(submitJson);
+  //   const submitJson = await submitRes.json();
+  //   console.log("Submission successful!");
+  //   console.log(submitJson);
+
+  console.log(JSON.stringify(payload, null, 2));
 }
 
 // ---- CLI prompt ----
